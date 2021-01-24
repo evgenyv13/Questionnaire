@@ -1,11 +1,11 @@
 package com.softarex.questionnaire.dto;
 
-public class ChangePasswordRequest {
+public class PasswordChangeRequest {
     private String email;
     private String code;
     private String newPassword;
 
-    public ChangePasswordRequest(String email, String code, String newPassword) {
+    public PasswordChangeRequest(String email, String code, String newPassword) {
         this.email = email;
         this.code = code;
         this.newPassword = newPassword;

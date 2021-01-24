@@ -27,9 +27,12 @@ public class MailService {
     private String passwordResetSubject;
     @Value("${mail.subjects.passwordchange}")
     private String passwordChangeSubject;
+    @Value("${mail.subjects.emailchange}")
+    private String emailChangeSubject;
     private String confirmSignUpMessageTemplate = "";
     private String passwordResetMessageTemplate = "";
     private String passwordChangeMessageTemplate = "";
+    private String emailChangeMessageTemplate = "";
 
     public MailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
@@ -42,6 +45,9 @@ public class MailService {
         InputStream passChangeInputStream = ClassLoader.getSystemResourceAsStream("mail_templates/passwordChange.html");
         scn = new Scanner(passChangeInputStream);
         while (scn.hasNextLine()) passwordChangeMessageTemplate += scn.nextLine();
+        InputStream mailChangeInputStream = ClassLoader.getSystemResourceAsStream("mail_templates/emailChange.html");
+        scn = new Scanner(mailChangeInputStream);
+        while (scn.hasNextLine()) emailChangeMessageTemplate += scn.nextLine();
     }
 
     private void sendMessage(String email, String subject, String template, Map<String, String> params) {
@@ -87,6 +93,18 @@ public class MailService {
                 email,
                 passwordChangeSubject,
                 passwordChangeMessageTemplate,
+                new HashMap<>() {{
+                    put("{{domain}}", domain);
+                    put("{{domain_with_protocol}}", domain.startsWith("http://") || domain.startsWith("https://") ? domain : (domainHttps ? "https://" : "http://") + domain);
+                    put("{{code}}", code);
+                }});
+    }
+
+    public void sendEmailChangeLink(String email, String code) {
+        sendMessage(
+                email,
+                emailChangeSubject,
+                emailChangeMessageTemplate,
                 new HashMap<>() {{
                     put("{{domain}}", domain);
                     put("{{domain_with_protocol}}", domain.startsWith("http://") || domain.startsWith("https://") ? domain : (domainHttps ? "https://" : "http://") + domain);

@@ -26,7 +26,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest().permitAll()
                 .and()
                 .formLogin()
-                .loginPage("/login").loginProcessingUrl("/login/process")
+                .loginPage("/login").loginProcessingUrl("/login/process").failureUrl("/login?msgType=badCredentials")
                 .usernameParameter("email")
                 .and()
                 .rememberMe().key("OMEGASecretRememberMeKey")

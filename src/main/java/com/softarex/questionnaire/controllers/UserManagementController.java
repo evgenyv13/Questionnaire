@@ -3,7 +3,10 @@ package com.softarex.questionnaire.controllers;
 import com.softarex.questionnaire.models.User;
 import com.softarex.questionnaire.services.UserService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -91,9 +94,23 @@ public class UserManagementController {
                     return "error_message";
                 }
                 if (userService.confirmPasswordChange(user.getEmail(), code)) {
-                    model.addAttribute("messageType", "success");
-                    model.addAttribute("message", "Password was successfully changed");
-                    return "redirect:../changepassword";
+                    return "redirect:/changepassword?msgType=confirmed";
+                } else {
+                    model.addAttribute("message", "Wrong confirmation code");
+                    return "error_message";
+                }
+            case "changeemail":
+                if (user == null) return "redirect:/login?msgType=needAuthForEmailChange";
+                Optional<User> updatedUser;
+                if (!userService.hasEmailChangeRequest(user.getEmail())) {
+                    model.addAttribute("message", "You don't have email change request");
+                    return "error_message";
+                }
+                if ((updatedUser = userService.confirmEmailChange(user.getEmail(), code)).isPresent()) {
+                    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                    Authentication updatedAuth = new UsernamePasswordAuthenticationToken(updatedUser.get(), auth.getCredentials(), auth.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(updatedAuth);
+                    return "redirect:/profile?msgType=emailChanged";
                 } else {
                     model.addAttribute("message", "Wrong confirmation code");
                     return "error_message";
@@ -109,13 +126,22 @@ public class UserManagementController {
                             @RequestParam(required = false) String email,
                             Model model
     ) {
-        if (msgType != null && msgType.equals("confirmed")) {
-            model.addAttribute("messageType", "success");
-            model.addAttribute("message", "Your email was successfully confirmed");
-        }
-        if (msgType != null && msgType.equals("needAuthForPasswordChange")) {
-            model.addAttribute("messageType", "danger");
-            model.addAttribute("message", "Your need to be authenticated in order to confirm password change");
+        if (msgType != null) switch (msgType) {
+            case "confirmed":
+                model.addAttribute("messageType", "success");
+                model.addAttribute("message", "Your email was successfully confirmed");
+                break;
+            case "needAuthForPasswordChange":
+                model.addAttribute("messageType", "danger");
+                model.addAttribute("message", "Your need to be authenticated in order to confirm password change");
+                break;
+            case "needAuthForEmailChange":
+                model.addAttribute("messageType", "danger");
+                model.addAttribute("message", "Your need to be authenticated in order to confirm email change");
+                break;
+            case "badCredentials":
+                model.addAttribute("messageType", "danger");
+                model.addAttribute("message", "Bad login credentials");
         }
         if (email != null) model.addAttribute("email", email);
         return "login";
@@ -181,9 +207,14 @@ public class UserManagementController {
 
     @GetMapping("/changepassword")
     private String getChangePassword(@AuthenticationPrincipal User user,
+                                     @RequestParam(required = false) String msgType,
                                      Model model
     ) {
         initHeader(user, model);
+        if (msgType != null && msgType.equals("confirmed")) {
+            model.addAttribute("messageType", "success");
+            model.addAttribute("message", "Password was successfully changed");
+        }
         return "changepassword";
     }
 
@@ -204,11 +235,53 @@ public class UserManagementController {
         } else if (!newPassword.equals(newPasswordConfirm)) {
             model.addAttribute("messageType", "danger");
             model.addAttribute("message", "New password and it's confirm are not equal");
-        } else  {
+        } else {
             userService.beginPasswordChange(user.getEmail(), newPassword);
             model.addAttribute("messageType", "success");
             model.addAttribute("message", "Confirmation link was successfully sent to your email");
         }
         return "changepassword";
+    }
+
+    @GetMapping("/profile")
+    private String getProfile(@AuthenticationPrincipal User user,
+                              @RequestParam(required = false) String msgType,
+                              Model model
+    ) {
+        initHeader(user, model);
+        if (msgType != null && msgType.equals("emailChanged")) {
+            model.addAttribute("messageType", "success");
+            model.addAttribute("message", "Email was successfully changed");
+        }
+        model.addAttribute("fn", user.getFirstName());
+        model.addAttribute("ln", user.getLastName());
+        model.addAttribute("email", user.getEmail());
+        model.addAttribute("pn", user.getPhoneNumber());
+        return "profile";
+    }
+
+    @PostMapping("/profile")
+    private String postProfile(@AuthenticationPrincipal User user,
+                               @RequestParam(required = false) String firstName,
+                               @RequestParam(required = false) String lastName,
+                               @RequestParam(required = false) String email,
+                               @RequestParam(required = false) String phoneNumber,
+                               Model model
+    ) {
+        User updatedUser = userService.updateUserParams(user.getEmail(), firstName, lastName, phoneNumber);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Authentication updatedAuth = new UsernamePasswordAuthenticationToken(updatedUser, auth.getCredentials(), auth.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(updatedAuth);
+        model.addAttribute("messageType", "success");
+        if (!user.getEmail().equals(email)) {
+            userService.beginEmailChange(user.getEmail(), email);
+            model.addAttribute("message", "Profile parameters successfully updated. Email change confirmation link was sent to " + email);
+        } else model.addAttribute("message", "Profile parameters successfully updated");
+        initHeader(updatedUser, model);
+        model.addAttribute("fn", updatedUser.getFirstName());
+        model.addAttribute("ln", updatedUser.getLastName());
+        model.addAttribute("email", updatedUser.getEmail());
+        model.addAttribute("pn", updatedUser.getPhoneNumber());
+        return "profile";
     }
 }

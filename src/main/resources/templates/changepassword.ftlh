@@ -10,7 +10,7 @@
 <body>
 <nav class="navbar sticky-top navbar-expand navbar-light bg-white">
     <div class="container">
-        <a class="navbar-brand logo ms-5" href="">Questionnaire</a>
+        <a class="navbar-brand logo ms-5" href="/">Questionnaire</a>
         <ul class="navbar-nav">
             <li class="nav-item">
                 <a class="nav-link logo mx-3" href="/fields">Fields</a>
@@ -41,7 +41,7 @@
                 <div class="alert alert-${messageType} text-center mt-2">${message}</div>
             </#if>
             <div class="mb-2">
-                <label class="form-label text-secondary mt-2">
+                <label class="form-label text-secondary <#if !(messageType?? && message??)>mt-2</#if>">
                     Current password
                     <span class="text-danger">*</span>
                 </label>

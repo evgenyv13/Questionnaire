@@ -10,7 +10,7 @@
 <body>
     <nav class="navbar sticky-top navbar-expand navbar-light bg-white">
         <div class="container">
-            <a class="navbar-brand logo ms-5" href="">Questionnaire</a>
+            <a class="navbar-brand logo ms-5" href="/">Questionnaire</a>
             <#if firstName?? && lastName??>
                 <ul class="navbar-nav">
                     <li class="nav-item">

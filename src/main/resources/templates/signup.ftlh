@@ -17,7 +17,7 @@
                 <div class="alert alert-${messageType}" role="alert">${message}</div>
             </#if>
             <div class="mb-3">
-                <input type="email" name="email" placeholder="Email" class="form-control" required/>
+                <input type="email" name="email" pattern="^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$" placeholder="Email" class="form-control" required/>
             </div>
             <div class="mb-3">
                 <input type="password" name="password" placeholder="Password" class="form-control" required/>
@@ -32,7 +32,7 @@
                 <input placeholder="Last name" name="lastName" pattern="^([А-Я]{1}[а-яё]{1,23}|[A-Z]{1}[a-z]{1,23})$" class="form-control"/>
             </div>
             <div class="mb-3">
-                <input placeholder="Phone number" name="phoneNumber" pattern="[0-9+][0-9() ]*" class="form-control"/>
+                <input placeholder="Phone number" name="phoneNumber" type="tel" pattern="[0-9+][0-9() ]*" class="form-control"/>
             </div>
             <div class="row fsb">
                 <button type="submit" class="btn btn-primary mb-2 ps-0 pe-0">SIGN UP</button><br>

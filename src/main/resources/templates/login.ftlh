@@ -17,7 +17,7 @@
                     <div class="alert alert-${messageType}">${message}</div>
                 </#if>
                 <div class="mb-3">
-                    <input type="email" name="email" value="${email!''}" placeholder="Email" class="form-control">
+                    <input type="email" name="email" pattern="^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$" value="${email!''}" placeholder="Email" class="form-control">
                 </div>
                 <div class="mb-3">
                     <input type="password" name="password" placeholder="Password" class="form-control"/>
