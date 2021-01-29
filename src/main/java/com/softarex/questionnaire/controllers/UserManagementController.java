@@ -122,7 +122,7 @@ public class UserManagementController {
     }
 
     @GetMapping("/login")
-    private String getLogin(@RequestParam(required = false) String msgType,
+    private void getLogin(@RequestParam(required = false) String msgType,
                             @RequestParam(required = false) String email,
                             Model model
     ) {
@@ -144,14 +144,13 @@ public class UserManagementController {
                 model.addAttribute("message", "Bad login credentials");
         }
         if (email != null) model.addAttribute("email", email);
-        return "login";
     }
 
     @GetMapping("/forgotpassword")
     private String getForgotPassword() { return "forgotpassword"; }
 
     @PostMapping("/forgotpassword")
-    private String postForgotPassword(@RequestParam String email,
+    private void postForgotPassword(@RequestParam String email,
                                       Model model
     ) {
         if (!userService.existsByEmail(email)) {
@@ -162,7 +161,6 @@ public class UserManagementController {
             model.addAttribute("message", "Password reset link successfully sent to " + email);
             userService.beginPasswordReset(email);
         }
-        return "forgotpassword";
     }
 
     @GetMapping("/resetpassword")
@@ -206,7 +204,7 @@ public class UserManagementController {
     }
 
     @GetMapping("/changepassword")
-    private String getChangePassword(@AuthenticationPrincipal User user,
+    private void getChangePassword(@AuthenticationPrincipal User user,
                                      @RequestParam(required = false) String msgType,
                                      Model model
     ) {
@@ -215,11 +213,10 @@ public class UserManagementController {
             model.addAttribute("messageType", "success");
             model.addAttribute("message", "Password was successfully changed");
         }
-        return "changepassword";
     }
 
     @PostMapping("/changepassword")
-    private String postChangePassword(@AuthenticationPrincipal User user,
+    private void postChangePassword(@AuthenticationPrincipal User user,
                                       @RequestParam String curPassword,
                                       @RequestParam String newPassword,
                                       @RequestParam String newPasswordConfirm,
@@ -240,11 +237,10 @@ public class UserManagementController {
             model.addAttribute("messageType", "success");
             model.addAttribute("message", "Confirmation link was successfully sent to your email");
         }
-        return "changepassword";
     }
 
     @GetMapping("/profile")
-    private String getProfile(@AuthenticationPrincipal User user,
+    private void getProfile(@AuthenticationPrincipal User user,
                               @RequestParam(required = false) String msgType,
                               Model model
     ) {
@@ -257,11 +253,10 @@ public class UserManagementController {
         model.addAttribute("ln", user.getLastName());
         model.addAttribute("email", user.getEmail());
         model.addAttribute("pn", user.getPhoneNumber());
-        return "profile";
     }
 
     @PostMapping("/profile")
-    private String postProfile(@AuthenticationPrincipal User user,
+    private void postProfile(@AuthenticationPrincipal User user,
                                @RequestParam(required = false) String firstName,
                                @RequestParam(required = false) String lastName,
                                @RequestParam(required = false) String email,
@@ -282,6 +277,5 @@ public class UserManagementController {
         model.addAttribute("ln", updatedUser.getLastName());
         model.addAttribute("email", updatedUser.getEmail());
         model.addAttribute("pn", updatedUser.getPhoneNumber());
-        return "profile";
     }
 }

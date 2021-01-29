@@ -118,6 +118,11 @@ public class UserService implements UserDetailsService {
         return Optional.of(user);
     }
 
+    public User updateUserInDB(User user) {
+        userRepo.save(user);
+        return userRepo.findByEmail(user.getEmail()).get();
+    }
+
     @Override
     public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
        Optional<User> userOpt = userRepo.findByEmail(s);
