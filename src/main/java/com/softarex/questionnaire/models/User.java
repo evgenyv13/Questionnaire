@@ -1,5 +1,7 @@
 package com.softarex.questionnaire.models;
 
+import com.softarex.questionnaire.dto.responses.FieldList;
+import com.softarex.questionnaire.dto.responses.ProfileInfo;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -7,6 +9,7 @@ import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Table(name = "users")
@@ -78,6 +81,24 @@ public class User implements UserDetails {
     public List<Field> getFields() { return fields; }
 
     public void addField(Field field) { fields.add(field); }
+
+    public boolean editField(Long id, String label, FieldType type, List<String> options, boolean required, boolean isActive) {
+        Optional<Field> fieldOpt = fields.stream().filter(el -> el.getId().equals(id)).findFirst();
+        if (!fieldOpt.isPresent()) return false;
+        Field field = fieldOpt.get();
+        field.setLabel(label);
+        field.setType(type);
+        field.setOptions(options);
+        field.setRequired(required);
+        field.setActive(isActive);
+        return true;
+    }
+
+    public boolean deleteFieldById(Long id) { return fields.removeIf(el -> el.getId().equals(id)); }
+
+    public ProfileInfo getProfileInfo() { return new ProfileInfo(firstName, lastName, email, phoneNumber); }
+
+    public FieldList getFiledList() { return new FieldList(fields); }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -1,23 +1,23 @@
 package com.softarex.questionnaire.controllers;
 
+import com.softarex.questionnaire.dto.responses.ResponseWrapper;
 import com.softarex.questionnaire.models.Field;
 import com.softarex.questionnaire.models.FieldType;
 import com.softarex.questionnaire.models.User;
 import com.softarex.questionnaire.services.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
-@Controller
+@RestController
 public class QuizController {
     private final UserService userService;
 
@@ -25,58 +25,69 @@ public class QuizController {
         this.userService = userService;
     }
 
-    private void initHeader(User user, Model model) {
-        if (user != null) {
-            if (user.getFirstName() != null && !user.getFirstName().equals(""))
-                model.addAttribute("firstName", user.getFirstName());
-            else model.addAttribute("firstName", "Unknown");
-            if (user.getLastName() != null && !user.getLastName().equals(""))
-                model.addAttribute("lastName", user.getLastName());
-            else model.addAttribute("lastName", "user");
-        }
-    }
-
-    @GetMapping("/fields")
-    private void getFields(@AuthenticationPrincipal User user,
-                           Model model
+    @GetMapping("/fields/list")
+    private ResponseWrapper getFields(@AuthenticationPrincipal User user,
+                                      HttpServletResponse response
     ) {
-        initHeader(user, model);
-        model.addAttribute("fields", user.getFields());
+        if (user == null) {
+            response.setStatus(403);
+            return new ResponseWrapper("NOT_AUTHENTICATED", null);
+        }
+        return user.getFiledList();
     }
 
     @PostMapping("/fields/add")
-    private String postFieldsAdd(@AuthenticationPrincipal User user,
-                                 @RequestParam String label,
-                                 @RequestParam String type,
-                                 @RequestParam String options,
-                                 @RequestParam(required = false) boolean required,
-                                 @RequestParam(required = false) boolean isActive) {
-        FieldType fType = null;
-        switch (type) {
-            case "sl":
-                fType = FieldType.SINGLE_LINE_TEXT;
-                break;
-            case "ml":
-                fType = FieldType.MULTI_LINE_TEXT;
-                break;
-            case "rb":
-                fType = FieldType.RADIOBUTTON;
-                break;
-            case "chb":
-                fType = FieldType.CHECKBOX;
-                break;
-            case "comb":
-                fType = FieldType.COMBOBOX;
-                break;
-            case "dt":
-                fType = FieldType.DATE;
-                break;
+    private ResponseWrapper addField(@AuthenticationPrincipal User user,
+                                     @RequestParam String label,
+                                     @RequestParam String type,
+                                     @RequestParam(required = false) String options,
+                                     @RequestParam(required = false) boolean required,
+                                     @RequestParam(required = false) boolean isActive,
+                                     HttpServletResponse response
+    ) {
+        if (user == null) {
+            response.setStatus(403);
+            return new ResponseWrapper("NOT_AUTHENTICATED", null);
         }
-        user.addField(new Field(label, fType, new ArrayList<>(Arrays.asList(options.split("\n"))), required, isActive));
-        User updatedUser = userService.updateUserInDB(user);
+        user.getFields().add(new Field(label, FieldType.valueOf(type), new ArrayList<String>(Arrays.stream(options.split("\n")).collect(Collectors.toList())), required, isActive));
+        User updated = userService.updateUserInDB(user);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Authentication updatedAuth = new UsernamePasswordAuthenticationToken(updatedUser, auth.getCredentials(), auth.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(updatedAuth);
-        return "redirect:/fields";
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(updated, auth.getCredentials(), auth.getAuthorities()));
+        return new ResponseWrapper("OK", "Field successfully added");
+    }
+
+    @PutMapping("/fields/{id}")
+    private ResponseWrapper editField(@AuthenticationPrincipal User user,
+                                      @PathVariable Long id,
+                                      @RequestParam String label,
+                                      @RequestParam String type,
+                                      @RequestParam(required = false) String options,
+                                      @RequestParam(required = false) boolean required,
+                                      @RequestParam(required = false) boolean isActive,
+                                      HttpServletResponse response
+    ) {
+        if (user == null) {
+            response.setStatus(403);
+            return new ResponseWrapper("NOT_AUTHENTICATED", null);
+        }
+        if (!user.editField(id, label, FieldType.valueOf(type), new ArrayList<String>(Arrays.stream(options.split("\n")).collect(Collectors.toList())), required, isActive))
+            return new ResponseWrapper("NO_SUCH_FIELD", "Field with id \"" + id + "\" not found");
+        userService.updateUserInDB(user);
+        return new ResponseWrapper("OK", "Field was successfully edited");
+    }
+
+    @DeleteMapping("/fields/{id}")
+    private ResponseWrapper deleteField(@AuthenticationPrincipal User user,
+                                        @PathVariable Long id,
+                                        HttpServletResponse response
+    ) {
+        if (user == null) {
+            response.setStatus(403);
+            return new ResponseWrapper("NOT_AUTHENTICATED", null);
+        }
+        if (!user.deleteFieldById(id))
+            return new ResponseWrapper("NO_SUCH_FIELD", "Field with id \"" + id + "\" not found");
+        userService.updateUserInDB(user);
+        return new ResponseWrapper("OK", "Field was successfully deleted");
     }
 }

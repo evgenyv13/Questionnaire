@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.swing.text.html.Option;
 import java.util.*;
 
 @Service
@@ -27,6 +28,10 @@ public class UserService implements UserDetailsService {
         this.userRepo = userRepo;
         this.passwordEncoder = passwordEncoder;
         this.mailService = mailService;
+    }
+
+    public User getUser(String email) {
+        return userRepo.findByEmail(email).orElse(null);
     }
 
     public boolean existsByEmail(String email) {
@@ -48,14 +53,19 @@ public class UserService implements UserDetailsService {
         return Optional.of(confirmed.getEmail());
     }
 
+    public boolean verifyUser(String email, String password) {
+        User fromDb = userRepo.findByEmail(email).get();
+        return checkUserPassword(fromDb, password);
+    }
+
     public void beginPasswordReset(String email) {
         String code = UUID.randomUUID().toString();
-        if (!passwordResetRequests.stream().anyMatch(el -> el.getEmail().equals(email))) passwordResetRequests.add(new PasswordResetRequest(email, code));
+        if (!passwordResetRequests.stream().anyMatch(el -> el.getEmail().equals(email)))
+            passwordResetRequests.add(new PasswordResetRequest(email, code));
         mailService.sendPasswordResetLink(email, code);
     }
 
     public Optional<String> getEmailFromPasswordResetCode(String code) {
-        if (!passwordResetRequests.stream().anyMatch(el -> el.getCode().equals(code))) return Optional.empty();
         return passwordResetRequests.stream().filter(el -> el.getCode().equals(code)).findFirst().map(el -> el.getEmail());
     }
 
@@ -79,14 +89,14 @@ public class UserService implements UserDetailsService {
         return passwordChangeRequests.stream().anyMatch(el -> el.getEmail().equals(email));
     }
 
-    public boolean confirmPasswordChange(String email, String code) {
+    public Optional<User> confirmPasswordChange(String email, String code) {
         PasswordChangeRequest req = passwordChangeRequests.stream().filter(el -> el.getEmail().equals(email)).findAny().orElse(null);
-        if (req == null || !req.getCode().equals(code)) return false;
+        if (req == null || !req.getCode().equals(code)) return Optional.empty();
         User user = userRepo.findByEmail(email).get();
         user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
         userRepo.save(user);
         passwordChangeRequests.remove(req);
-        return true;
+        return Optional.of(user);
     }
 
     public User updateUserParams(String email, String firstName, String lastName, String phoneNumber) {
@@ -119,8 +129,7 @@ public class UserService implements UserDetailsService {
     }
 
     public User updateUserInDB(User user) {
-        userRepo.save(user);
-        return userRepo.findByEmail(user.getEmail()).get();
+        return userRepo.save(user);
     }
 
     @Override

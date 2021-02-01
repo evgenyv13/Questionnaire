@@ -22,15 +22,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.csrf().disable();
         http
                 .authorizeRequests()
-                .antMatchers("/fields", "/fields/*", "/responses", "/changepassword", "/profile").authenticated()
                 .anyRequest().permitAll()
                 .and()
-                .formLogin()
-                .loginPage("/login").loginProcessingUrl("/login/process").failureUrl("/login?msgType=badCredentials")
-                .usernameParameter("email")
-                .and()
-                .rememberMe().key("OMEGASecretRememberMeKey")
-                .and()
+                .formLogin().disable()
                 .logout().logoutSuccessUrl("/")
                 .permitAll();
     }
