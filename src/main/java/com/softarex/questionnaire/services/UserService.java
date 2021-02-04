@@ -30,6 +30,7 @@ public class UserService implements UserDetailsService {
         this.mailService = mailService;
     }
 
+    public User getUser(Long id) { return userRepo.findById(id).orElse(null); }
     public User getUser(String email) {
         return userRepo.findByEmail(email).orElse(null);
     }
@@ -46,7 +47,7 @@ public class UserService implements UserDetailsService {
     }
 
     public Optional<String> confirmSignUp(String code) {
-        if (!unconfirmed.keySet().contains(code)) return Optional.empty();
+        if (!unconfirmed.containsKey(code)) return Optional.empty();
         User confirmed = unconfirmed.get(code);
         unconfirmed.remove(code);
         userRepo.save(confirmed);
@@ -60,17 +61,17 @@ public class UserService implements UserDetailsService {
 
     public void beginPasswordReset(String email) {
         String code = UUID.randomUUID().toString();
-        if (!passwordResetRequests.stream().anyMatch(el -> el.getEmail().equals(email)))
+        if (passwordResetRequests.stream().noneMatch(el -> el.getEmail().equals(email)))
             passwordResetRequests.add(new PasswordResetRequest(email, code));
         mailService.sendPasswordResetLink(email, code);
     }
 
     public Optional<String> getEmailFromPasswordResetCode(String code) {
-        return passwordResetRequests.stream().filter(el -> el.getCode().equals(code)).findFirst().map(el -> el.getEmail());
+        return passwordResetRequests.stream().filter(el -> el.getCode().equals(code)).findFirst().map(PasswordResetRequest::getEmail);
     }
 
     public void resetPassword(String email, String code, String newPassword) {
-        if (!passwordResetRequests.stream().anyMatch(el -> el.getCode().equals(code)) || !getEmailFromPasswordResetCode(code).get().equals(email)) return;
+        if (passwordResetRequests.stream().noneMatch(el -> el.getCode().equals(code)) || !getEmailFromPasswordResetCode(code).get().equals(email)) return;
         User user = userRepo.findByEmail(email).get();
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepo.save(user);
@@ -132,10 +133,12 @@ public class UserService implements UserDetailsService {
         return userRepo.save(user);
     }
 
+    public Iterable<User> getAllUsers() { return userRepo.findAll(); }
+
     @Override
     public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
        Optional<User> userOpt = userRepo.findByEmail(s);
-       if (!userOpt.isPresent()) throw new UsernameNotFoundException("User with name\"" + s + "\" does not exist");
+       if (userOpt.isEmpty()) throw new UsernameNotFoundException("User with name\"" + s + "\" does not exist");
        return userOpt.get();
     }
 }

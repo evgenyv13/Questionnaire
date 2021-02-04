@@ -1,10 +1,13 @@
 package com.softarex.questionnaire.models;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import javax.persistence.*;
 import java.util.List;
 
 @Entity
 @Table(name = "fields")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Field {
     @Id
     @GeneratedValue
@@ -35,7 +38,10 @@ public class Field {
 
     public FieldType getType() { return type; }
 
-    public List<String> getOptions() { return options; }
+    public List<String> getOptions() {
+        if (!(type == FieldType.RADIOBUTTON || type == FieldType.COMBOBOX)) return null;
+        return options;
+    }
 
     public void setOptions(List<String> options) {
         if (type == FieldType.RADIOBUTTON || type == FieldType.COMBOBOX) this.options = options;

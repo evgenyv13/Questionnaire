@@ -25,6 +25,9 @@ public class User implements UserDetails {
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private List<Field> fields = new ArrayList<>();
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id")
+    private List<QuizResult> results = new ArrayList<>();
 
     public User() {}
 
@@ -84,7 +87,7 @@ public class User implements UserDetails {
 
     public boolean editField(Long id, String label, FieldType type, List<String> options, boolean required, boolean isActive) {
         Optional<Field> fieldOpt = fields.stream().filter(el -> el.getId().equals(id)).findFirst();
-        if (!fieldOpt.isPresent()) return false;
+        if (fieldOpt.isEmpty()) return false;
         Field field = fieldOpt.get();
         field.setLabel(label);
         field.setType(type);
@@ -95,6 +98,8 @@ public class User implements UserDetails {
     }
 
     public boolean deleteFieldById(Long id) { return fields.removeIf(el -> el.getId().equals(id)); }
+
+    public void addResult(QuizResult result) { results.add(result); }
 
     public ProfileInfo getProfileInfo() { return new ProfileInfo(firstName, lastName, email, phoneNumber); }
 
